@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/CodeDog25/tinyapp-xd/issues"
   },
-  "homepage": "https://github.com/CodeDog25/tinyapp-xd#readme"
+  "homepage": "https://github.com/CodeDog25/tinyapp-xd#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
 }
