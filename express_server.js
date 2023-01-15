@@ -84,11 +84,17 @@ app.get("/urls/new", (req, res) => {
     const templateVars = {
       user: usersDatabse[req.cookies["user_id"]]
     };
+    if (!templateVars.user) {
+        res.redirect("/login");
+    }
     res.render("urls_new", templateVars);
 });
   
 // GET /urls/:id
 app.get("/urls/:id", (req, res) => {
+    if (!urlDatabase[req.params.id]) {
+      res.send("This id does not exist!");
+    }
     const templateVars = { 
       user: usersDatabse[req.cookies.userId],
       id: req.params.id, 
@@ -100,6 +106,9 @@ app.get("/urls/:id", (req, res) => {
 
 // GET /u/:id
 app.get("/u/:id", (req, res) => {
+    if (!urlDatabase[req.params.id]) {
+      res.send("This id does not exist!");
+    }
     const longURL = urlDatabase[req.params.id];
     res.redirect(longURL);
 });
@@ -108,7 +117,7 @@ app.get("/u/:id", (req, res) => {
 // GET /register
 app.get("/register", (req, res) => {
   const templateVars = { 
-  user: usersDatabse[req.cookies["user_id"]] 
+    user: usersDatabse[req.cookies["user_id"]] 
   };
   if (templateVars.user) {
     res.redirect("/urls");
@@ -120,14 +129,22 @@ app.get("/register", (req, res) => {
 // GET /login
 app.get("/login", (req, res) => {
     const templateVars = {
-      user: usersDatabse[req.cookies["user_id"]] 
+      user: usersDatabse[req.cookies["user_id"]]
     };
+    if (templateVars.user) {
+      res.redirect("/urls");
+    }
     res.render("urls_login", templateVars);
 });
 
 
 // POST /urls
 app.post("/urls", (req, res) => {
+  let currentUser = usersDatabse[req.cookies["user_id"]];
+  if (!currentUser) {
+    res.redirect("Please login");
+  }
+
   const id = generateRandomString();
   const longURL = req.body.longURL;
   urlDatabase[id] = longURL;
@@ -137,9 +154,13 @@ app.post("/urls", (req, res) => {
 
 // POST /urls/:id/delete
 app.post("/urls/:id/delete", (req, res) => {
-  const id = req.params.id;
-  delete urlDatabase[id];
-  res.redirect(`/urls`);
+  let currentUser = usersDatabse[req.cookies["user_id"]];
+  if (currentUser) {
+    delete urlDatabase[req.params.id];
+    res.redirect("/urls");
+  } else {
+    res.send("You cannot delete it!");
+  }
 });
 
 // PUT /urls/:id
