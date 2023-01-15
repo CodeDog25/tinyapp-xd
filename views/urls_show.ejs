@@ -24,10 +24,8 @@
       <div class="card-footer text-muted">
         <h5>Edit</h5>
         <form method="POST" action="/urls/<%= id %>">
-        <label for="newURL">
-          New URL:
-          <input value="<% longURL %>" name="newURL" type="text">
-        </label>
+        <label for="longURL">New URL:</label>
+          <input value="<% longURL %>" name="longURL" type="text">
         <button type="submit">Submit</button>
       </form>
       </div>
