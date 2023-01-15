@@ -26,6 +26,19 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {
+    userRandomID: {
+      id: "userRandomID",
+      email: "user@example.com",
+      password: "purple-monkey-dinosaur",
+    },
+    user2RandomID: {
+      id: "user2RandomID",
+      email: "user2@example.com",
+      password: "dishwasher-funk",
+    },
+  };
+
 /////////////////////////////////////////
 //////////ROUTES
 /////////////////////////////////////////
@@ -103,6 +116,18 @@ app.post("/login", (req, res) => {
 
 app.post("/logout", (req, res) => {
   res.clearCookie("username");
+  res.redirect("/urls");
+});
+
+app.post("/register", (req,res) => {
+  const id = generateRandomString();
+  const user = {
+    id,
+    email, 
+    password 
+};
+  users[id] = user;
+  res.cookie("user_id", id);
   res.redirect("/urls");
 });
 
