@@ -16,8 +16,18 @@ app.use(cookieParser());
 
 //Function
 const generateRandomString = () => {
-    return Math.random().toString(36).substring(2, 8)
+  return Math.random().toString(36).substring(2, 8)
 };
+
+const getUserByEmail = () => {
+  for (const item in users) {
+    if (users[item].email === email) {
+        return item;
+    }
+  }
+  return null;
+};
+
 /////////////////////////////////////////
 //////////DATABASE
 /////////////////////////////////////////
@@ -96,6 +106,9 @@ app.get("/u/:id", (req, res) => {
   res.redirect(longURL);
 });
 
+
+
+
 app.post("/urls/:id/delete", (req, res) => {
   const id = req.params.id;
   delete urlDatabase[id];
@@ -106,6 +119,11 @@ app.post("/urls/:id", (req,res) => {
   const longURL = req.body.longURL;
   urlDatabase[id] = longURL;
   res.redirect(`/urls`);
+});
+
+
+app.get("/login", (req, res) => {
+  res.render("urls_login");
 });
 
 app.post("/login", (req, res) => {
@@ -122,13 +140,25 @@ app.post("/register", (req,res) => {
   const id = generateRandomString();
   const user = {
     id,
-    email, 
+    email,
     password 
 };
   users[id] = user;
+
+  if (!email || !password) {
+    return res.status(400).send("Missing email and/or password!");
+  }
+
+  if (getUserByEmail(req.body.email)) {
+    return res.status(400).send("This email has already exist!");
+  }
+
   res.cookie("user_id", id);
   res.redirect("/urls");
 });
+
+
+
 
 /////////////////////////////////////////
 //////////SERVER LISTENING...
