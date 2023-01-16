@@ -1,3 +1,5 @@
+
+const { getUserByEmail, generateRandomString, urlsForUser } = require("./helpers");
 const express = require("express");
 const morgan = require("morgan");
 const app = express();
@@ -5,7 +7,7 @@ app.set("view engine", "ejs");
 const PORT = 8080; // default port 8080
 const cookieSession = require("cookie-session");
 const bcrypt = require("bcryptjs");
-const salt = bcrypt.genSaltSync(10);
+
 
 /////////////////////////////////////////
 //////////MIDDLEWARES
@@ -18,30 +20,6 @@ app.use(
       keys: ["dingding"]
 }));
 
-
-//Functions
-const generateRandomString = () => {
-  return Math.random().toString(36).substring(2, 8)
-};
-
-const getUserByEmail = (email) => {
-  for (const uid in usersDatabase) {
-    if (usersDatabase[uid].email === email) {
-        return usersDatabase[uid].id;
-    }
-  }
-  return null;
-};
-
-const urlsForUser = (urlDatabase, id) => {
-    let userURL = {};
-    for (const key in urlDatabase) {
-      if (urlDatabase[key].userID === id) {
-        userURL[key] = urlDatabase[key];
-    }
-  }   
-  return userURL;
-};
 /////////////////////////////////////////
 //////////DATABASE
 /////////////////////////////////////////
@@ -76,34 +54,33 @@ const usersDatabase = {
 
 // GET /
 app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
-// GET /urls.json
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
-// GET /hello
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
+  let templateVars = {
+    urls: urlDatabase, 
+    user: usersDatabase[req.session.user_id] 
+};
+  if (templateVars.user) {
+    res.redirect("/urls");
+  } else {
+    res.redirect("/login");
+  }
 });
 
 
 // GET /urls
 app.get("/urls", (req, res) => {
-if (usersDatabase[req.session.user_id]) {
-    const templateVars = {
-      user: usersDatabase[req.session.user_id],
-      urls: urlsForUser(urlDatabase, req.session.user_id)
-    };
+  let userID = req.session.user_id;
+  let urls = urlsForUser(userID, urlDatabase);
 
-    res.render("urls_index", templateVars);
-  } else {
-    res.status(401).send("Please Login before continue!");
+  if (!userID) {
+    return res.status(400).send("Please login to view!");
   }
-});
 
+  const templateVars = {
+    urls: urls,
+    user: usersDatabase[req.session.user_id],
+  };
+  res.render("urls_index", templateVars);
+});
 
 // GET /urls/new
 app.get("/urls/new", (req, res) => {
@@ -116,25 +93,23 @@ app.get("/urls/new", (req, res) => {
     res.render("urls_new", templateVars);
 });
   
-// GET /urls/:id  **
-app.get("/urls/:id", (req, res) => {
-    const newURL = req.body.longURL;
-    const urlID = req.params.id;
-    let userID = usersDatabase[req.session.user_id];
   
-    if (!urlDatabase[urlID]) {
-      return res.status(400).send("The URL does not exist!");
+// GET /urls/:id
+app.get("/urls/:id", (req, res) => {
+  if (!urlDatabase[req.params.id]) {
+      return res.send("This url does not exist");
+   }; 
+    const templateVars = {
+      id: req.params.id,
+      longURL: urlDatabase[req.params.id].longURL,
+      user: usersDatabase[req.session.user_id]
+    };
+    if (urlDatabase[templateVars.id].userID !== templateVars.user.id) {
+      return res.send("You are not own this URL");
     }
-    if (!userID) {
-      return res.status(401).send("Please Login");
-    }
- 
-    if (urlDatabase[urlID].userID !== userID) {
-      return res.status(401).send("You don't own the URL");
-    }
-    urlDatabase[urlID].longURL = newURL;
-    res.redirect('/urls');
+    res.render("urls_show", templateVars);
 });
+
 
 // GET /u/:id   
 app.get("/u/:id", (req, res) => {
@@ -142,20 +117,7 @@ app.get("/u/:id", (req, res) => {
       res.redirect(urlDatabase[req.params.id].longURL);
    } else {
      res.status(404).send("This url does not exist!");
-   }
-   
-});
-
-
-// GET /register
-app.get("/register", (req, res) => {
-if (!usersDatabase[req.session.user_id]) {
-    const templateVars = {
-      user: usersDatabase[req.session.user_id],
-    };
-    res.render("urls_register", templateVars);
-  }
-  res.redirect("/urls");
+   }  
 });
 
 // GET /login
@@ -172,21 +134,18 @@ app.get("/login", (req, res) => {
 
 // POST /urls
 app.post("/urls", (req, res) => {
-  const userID = req.session.user_id;
-  const userURL = urlsForUser(urlDatabase, userID);
-  const templateVars = {
-    urls: userURL,
-    user: usersDatabase[userID]
-  };
+    let user = usersDatabase[req.session.user_id];
 
-  if (!templateVars.user) {
-    return res.status(401).send("Please login to view!");
-  }  
-   res.render('urls_index', templateVars);
-});
-
-
-
+    if (!user) {
+      return res.status(401).send("Please login to shorten a URL.");
+    }
+    const ID = generateRandomString();
+    urlDatabase[ID] = {
+      longURL: req.body.longURL,
+      userID: user.id
+    };
+    res.redirect(`/urls/${ID}`);
+  });
 
 // POST /urls/:id/delete **
 app.post("/urls/:id/delete", (req, res) => {
@@ -214,9 +173,6 @@ const longURL = req.body.longURL;
 }
 });
 
-
-
-
 // POST /login
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
@@ -238,11 +194,21 @@ app.post("/logout", (req, res) => {
   res.redirect("/login");
 }); 
 
+// GET /register
+app.get("/register", (req, res) => {
+    if (!usersDatabase[req.session.user_id]) {
+        const templateVars = {
+          user: usersDatabase[req.session.user_id],
+        };
+        res.render("urls_register", templateVars);
+      }
+      res.redirect("/urls");
+    });
 
 // POST /register
 app.post("/register", (req,res) => {
     const { email, password} = req.body;
-    const hashedPass = bcrypt.hashSync(password, salt);
+    const hashedPass = bcrypt.hashSync(password, 10);
     if (!email || !password) {
       return res.status(400).send("Missing email and/or password!");
     }
@@ -253,13 +219,15 @@ app.post("/register", (req,res) => {
     
     const id = generateRandomString();
     usersDatabase[id] = {
-        id,
+        id: id,
         email,
-        hashedPass
+        password: hashedPass
     };
     req.session.user_id = id;
     res.redirect("/urls");
-  });
+});
+
+
 
 
 /////////////////////////////////////////
