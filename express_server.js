@@ -41,7 +41,7 @@ const urlDatabase = {
       longURL: "https://www.google.ca",
       userID: "aJ48lW",
     },
-  };
+};
 
 const usersDatabse = {
     userRandomID: {
@@ -99,25 +99,25 @@ app.get("/urls/new", (req, res) => {
   
 // GET /urls/:id
 app.get("/urls/:id", (req, res) => {
-    if (!urlDatabase[req.params.id]) {
-      res.send("This id does not exist!");
-    }
     const templateVars = { 
-      user: usersDatabse[req.cookies.userId],
-      id: req.params.id, 
-      longURL: urlDatabase[req.params.id]
+      user: usersDatabse[req.cookies["user_id"]],
+      id: id, 
+      longURL: urlDatabase[id].longURL
   };
+    if (!usersDatabse[templateVars.id]) {
+    res.send("This id does not exist!");
+  }
     res.render("urls_show", templateVars);
 });
 
 
 // GET /u/:id
 app.get("/u/:id", (req, res) => {
-    if (!urlDatabase[req.params.id]) {
-      res.send("This id does not exist!");
-    }
-    const longURL = urlDatabase[req.params.id];
+    if (urlDatabase[req.params.id]) {
+    const longURL = urlDatabase[req.params.id].longURL;
     res.redirect(longURL);
+   } 
+   res.send("this id doesn't exist");
 });
 
 
@@ -154,7 +154,10 @@ app.post("/urls", (req, res) => {
 
   const id = generateRandomString();
   const longURL = req.body.longURL;
-  urlDatabase[id] = longURL;
+  urlDatabase[id] = {
+    longURL: longURL,
+    userID: req.cookies["user_id"]
+  };
   res.redirect(`urls/${id}`);
 });
 
@@ -163,18 +166,23 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:id/delete", (req, res) => {
   let currentUser = usersDatabse[req.cookies["user_id"]];
   if (currentUser) {
-    delete urlDatabase[req.params.id];
+    delete urlDatabase[req.params.id].longURL;
     res.redirect("/urls");
   } else {
     res.send("You cannot delete it!");
   }
 });
 
-// PUT /urls/:id
-app.put("/urls/:id", (req,res) => {
-  const longURL = req.body.longURL;
-  urlDatabase[id] = longURL;
-  res.redirect(`/urls`);
+// POST /urls/:id
+app.post("/urls/:id", (req,res) => {
+  if (usersDatabse[req.cookies["user_id"]]) {
+    const id = req.params.id;  
+    const longURL = req.body.longURL;
+    urlDatabase[id].longURL = longURL;
+    res.redirect(`/urls/${id}`);
+  } else {
+    res.send("Cannot access!");
+}
 });
 
 // POST /login
