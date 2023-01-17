@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
     cookieSession({
       name: "session",
-      keys: ["dingding"]
+      keys: ["secretkeys"]
 }));
 
 /////////////////////////////////////////
@@ -180,7 +180,7 @@ app.post("/login", (req, res) => {
   if (user === null) {
     return res.status(403).send("Email does not exist!");
   }
-  if (!user || !bcrypt.compareSync(password, user.hashedPass)) {
+  if (!user || !bcrypt.compareSync(password, user.hashedPassword)) {
     return res.status(403).send("Incorrect email and/or password!");
   }
   res.session.user_id = user.id; 
@@ -208,7 +208,7 @@ app.get("/register", (req, res) => {
 // POST /register
 app.post("/register", (req,res) => {
     const { email, password} = req.body;
-    const hashedPass = bcrypt.hashSync(password, 10);
+    const hashedPassword = bcrypt.hashSync(password, 10);
     if (!email || !password) {
       return res.status(400).send("Missing email and/or password!");
     }
@@ -221,7 +221,7 @@ app.post("/register", (req,res) => {
     usersDatabase[id] = {
         id: id,
         email,
-        password: hashedPass
+        password: hashedPassword
     };
     req.session.user_id = id;
     res.redirect("/urls");
