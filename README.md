@@ -4,9 +4,9 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Final Product
 
-![https://github.com/CodeDog25/tinyapp-xd/blob/main/docs/:urls.png?raw=true](#)
-![https://github.com/CodeDog25/tinyapp-xd/blob/main/docs/ID.png?raw=true](#)
-![https://github.com/CodeDog25/tinyapp-xd/blob/main/docs/:login.png?raw=true](#)
+!["Screenshot of URLs page"](https://github.com/CodeDog25/tinyapp-xd/blob/main/docs/:urls.png?raw=true)
+!["Screenshot of urls/:id page"](https://github.com/CodeDog25/tinyapp-xd/blob/main/docs/ID.png?raw=true)
+!["Screenshot of login page"](https://github.com/CodeDog25/tinyapp-xd/blob/main/docs/:login.png?raw=true)
 
 ## Dependencies
 
