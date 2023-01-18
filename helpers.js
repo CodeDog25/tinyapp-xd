@@ -2,12 +2,13 @@
 
 //find user by email
 const getUserByEmail = (email, database) => {
+  let user;
     for (const userID in database) {
       if (database[userID].email === email) {
-          return database[userID].id;
+          user = database[userID];
       }
     }
-    return false;
+    return user;
   };
 
 //generate unique id
@@ -28,8 +29,10 @@ const urlsForUser = (id, urlDatabase) => {
   };
 
 
+
+
   module.exports = {
     getUserByEmail,
     generateRandomString,
-    urlsForUser
+    urlsForUser,
   };

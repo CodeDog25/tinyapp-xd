@@ -1,5 +1,3 @@
-
-const { getUserByEmail, generateRandomString, urlsForUser } = require("./helpers");
 const express = require("express");
 const morgan = require("morgan");
 const app = express();
@@ -7,6 +5,8 @@ app.set("view engine", "ejs");
 const PORT = 8080; // default port 8080
 const cookieSession = require("cookie-session");
 const bcrypt = require("bcryptjs");
+const { getUserByEmail, generateRandomString, urlsForUser} = require("./helpers");
+
 
 
 /////////////////////////////////////////
@@ -17,40 +17,77 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
     cookieSession({
       name: "session",
-      keys: ["secretkeys"]
+      keys: ["user_id"],
 }));
 
-/////////////////////////////////////////
-//////////DATABASE
-/////////////////////////////////////////
 
+/////////////////////////////////////////
+//////////DATABASES
+/////////////////////////////////////////
 const urlDatabase = {
-    b6UTxQ: {
-      longURL: "https://www.tsn.ca",
-      userID: "aJ48lW",
-    },
-    i3BoGr: {
-      longURL: "https://www.google.ca",
-      userID: "aJ48lW",
-    },
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
 };
 
 const usersDatabase = {
-    sn1ymq: {
-      id: "sn1ymq",
-      email: "user@example.com",
-      password: "purple-monkey-dinosaur",
-    },
-    up4xwu: {
-      id: "up4xwu",
-      email: "test@lhl.com",
-      password: "lhl",
-    },
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: bcrypt.hashSync("purple-monkey-dinosaur", 10),
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: bcrypt.hashSync("dishwasher-funk", 10),
+  },
 };
 
 /////////////////////////////////////////
 //////////ROUTES
 /////////////////////////////////////////
+
+// GET /register
+app.get("/register", (req, res) => {
+  const user = usersDatabase[req.session.user_id];
+  if (user) {
+    res.redirect("/urls");
+  } else {
+    const templateVars = { user: user };
+    res.render("urls_register", templateVars);
+  }
+});
+  
+
+// POST /register
+app.post("/register", (req,res) => {
+  const { email, password } = req.body;
+  const hashedPassword = bcrypt.hashSync(password, 10);
+
+  if (email === '' || password === '') {
+    return res.status(400).send("Missing email and/or password!");
+  }
+
+  if (getUserByEmail(email, usersDatabase)) {
+    return res.status(400).send("This email has already exist!");
+  }
+
+  const id = generateRandomString();
+  const user = { 
+    id: id, 
+    email: email, 
+    password: hashedPassword 
+  };
+  usersDatabase[id] = user;
+  req.session.user_id = id;
+  res.redirect("/urls");
+});
+
 
 // GET /
 app.get("/", (req, res) => {
@@ -122,13 +159,13 @@ app.get("/u/:id", (req, res) => {
 
 // GET /login
 app.get("/login", (req, res) => {
-    const templateVars = {
-      user: usersDatabase[req.session.user_id]
-    };
-    if (templateVars.user) {
+    const user = usersDatabase[req.session.user_id];
+    if (user) {
       res.redirect("/urls");
-    }
-    res.render("urls_login", templateVars);
+    } else {
+      const templateVars = {user: user};
+      res.render("urls_login", templateVars);
+    }  
 });
 
 
@@ -176,57 +213,23 @@ const longURL = req.body.longURL;
 // POST /login
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
-  let user;
-  if (user === null) {
+  const user = getUserByEmail(email, usersDatabase);
+  if (!user) {
     return res.status(403).send("Email does not exist!");
   }
-  if (!user || !bcrypt.compareSync(password, user.hashedPassword)) {
-    return res.status(403).send("Incorrect email and/or password!");
+  if (!bcrypt.compareSync(password, user.password)) {
+    return res.status(403).send("Incorrect password!");
   }
-  res.session.user_id = user.id; 
-  res.redirect(`/urls`);
+  req.session.user_id = user.id; 
+  res.redirect("/urls");
 });
 
 
 // POST /logout
 app.post("/logout", (req, res) => {
-  res.clearCookie("session");
+  req.session = null;
   res.redirect("/login");
 }); 
-
-// GET /register
-app.get("/register", (req, res) => {
-    if (!usersDatabase[req.session.user_id]) {
-        const templateVars = {
-          user: usersDatabase[req.session.user_id],
-        };
-        res.render("urls_register", templateVars);
-      }
-      res.redirect("/urls");
-    });
-
-// POST /register
-app.post("/register", (req,res) => {
-    const { email, password} = req.body;
-    const hashedPassword = bcrypt.hashSync(password, 10);
-    if (!email || !password) {
-      return res.status(400).send("Missing email and/or password!");
-    }
-  
-    if (getUserByEmail(email, usersDatabase)) {
-      return res.status(400).send("This email has already exist!");
-    }
-    
-    const id = generateRandomString();
-    usersDatabase[id] = {
-        id: id,
-        email,
-        password: hashedPassword
-    };
-    req.session.user_id = id;
-    res.redirect("/urls");
-});
-
 
 
 
@@ -236,3 +239,4 @@ app.post("/register", (req,res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
