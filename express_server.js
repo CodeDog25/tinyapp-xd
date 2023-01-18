@@ -52,43 +52,6 @@ const usersDatabase = {
 //////////ROUTES
 /////////////////////////////////////////
 
-// GET /register
-app.get("/register", (req, res) => {
-  const user = usersDatabase[req.session.user_id];
-  if (user) {
-    res.redirect("/urls");
-  } else {
-    const templateVars = { user: user };
-    res.render("urls_register", templateVars);
-  }
-});
-  
-
-// POST /register
-app.post("/register", (req,res) => {
-  const { email, password } = req.body;
-  const hashedPassword = bcrypt.hashSync(password, 10);
-
-  if (email === '' || password === '') {
-    return res.status(400).send("Missing email and/or password!");
-  }
-
-  if (getUserByEmail(email, usersDatabase)) {
-    return res.status(400).send("This email has already exist!");
-  }
-
-  const id = generateRandomString();
-  const user = { 
-    id: id, 
-    email: email, 
-    password: hashedPassword 
-  };
-  usersDatabase[id] = user;
-  req.session.user_id = id;
-  res.redirect("/urls");
-});
-
-
 // GET /
 app.get("/", (req, res) => {
   let templateVars = {
@@ -231,6 +194,41 @@ app.post("/logout", (req, res) => {
   res.redirect("/login");
 }); 
 
+// GET /register
+app.get("/register", (req, res) => {
+  const user = usersDatabase[req.session.user_id];
+  if (user) {
+    res.redirect("/urls");
+  } else {
+    const templateVars = { user: user };
+    res.render("urls_register", templateVars);
+  }
+});
+  
+
+// POST /register
+app.post("/register", (req,res) => {
+  const { email, password } = req.body;
+  const hashedPassword = bcrypt.hashSync(password, 10);
+
+  if (email === '' || password === '') {
+    return res.status(400).send("Missing email and/or password!");
+  }
+
+  if (getUserByEmail(email, usersDatabase)) {
+    return res.status(400).send("This email has already exist!");
+  }
+
+  const id = generateRandomString();
+  const user = { 
+    id: id, 
+    email: email, 
+    password: hashedPassword 
+  };
+  usersDatabase[id] = user;
+  req.session.user_id = id;
+  res.redirect("/urls");
+});
 
 
 /////////////////////////////////////////
